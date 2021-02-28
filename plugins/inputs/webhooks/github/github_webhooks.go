@@ -42,10 +42,12 @@ func (gh *GithubWebhook) eventHandler(w http.ResponseWriter, r *http.Request) {
 
 	e, err := NewEvent(data, eventType)
 	if err != nil {
+		log.Printf("D! Error %v NewEvent", eventType)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if e != nil {
+		log.Printf("D! Success %v NewEvent", eventType)
 		p := e.NewMetric()
 		gh.acc.AddFields("github_webhooks", p.Fields(), p.Tags(), p.Time())
 	}
@@ -116,6 +118,9 @@ func NewEvent(data []byte, name string) (Event, error) {
 		return generateEvent(data, &TeamAddEvent{})
 	case "watch":
 		return generateEvent(data, &WatchEvent{})
+	case "workflow_run":
+		log.Printf("D! Inside %v case", name)
+		return generateEvent(data, &WorkflowRunEvent{})
 	}
 	return nil, &newEventError{"Not a recognized event type"}
 }

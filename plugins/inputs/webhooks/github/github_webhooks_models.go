@@ -85,6 +85,14 @@ type DeploymentStatus struct {
 	Description string `json:"description"`
 }
 
+type WorkflowRun struct {
+	Name        string `json:"name"`
+	Status      string `json:"status"`
+	Conclusion  string `json:"conclusion"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
 type CommitCommentEvent struct {
 	Comment    CommitComment `json:"comment"`
 	Repository Repository    `json:"repository"`
@@ -708,5 +716,37 @@ func (s WatchEvent) NewMetric() telegraf.Metric {
 	if err != nil {
 		log.Fatalf("Failed to create %v event", event)
 	}
+	return m
+}
+
+type WorkflowRunEvent struct {
+	Action      string      `json:"action"`
+	WorkflowRun WorkflowRun `json:"workflow_run"`
+	Repository  Repository  `json:"repository"`
+	Sender      Sender      `json:"sender"`
+}
+
+func (s WorkflowRunEvent) NewMetric() telegraf.Metric {
+	event := "workflow_run"
+	t := map[string]string{
+		"event":      event,
+		"action":     s.Action,
+		"repository": s.Repository.Repository,
+		"private":    fmt.Sprintf("%v", s.Repository.Private),
+		"user":       s.Sender.User,
+		"admin":      fmt.Sprintf("%v", s.Sender.Admin),
+		"status":     s.WorkflowRun.Status,
+		"conclusion": s.WorkflowRun.Conclusion,
+		"name":       s.WorkflowRun.Name,
+	}
+	f := map[string]interface{}{
+		"created_at":  s.WorkflowRun.CreatedAt,
+		"updated_at":  s.WorkflowRun.UpdatedAt,
+	}
+	m, err := metric.New(meas, t, f, time.Now())
+	if err != nil {
+		log.Fatalf("Failed to create %v event", event)
+	}
+	log.Printf("D! Metric %v", m)
 	return m
 }
