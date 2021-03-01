@@ -728,6 +728,8 @@ type WorkflowRunEvent struct {
 
 func (s WorkflowRunEvent) NewMetric() telegraf.Metric {
 	event := "workflow_run"
+	createdAt, _ := time.Parse(time.RFC3339, s.WorkflowRun.CreatedAt)
+	updatedAt, _ := time.Parse(time.RFC3339, s.WorkflowRun.UpdatedAt)
 	t := map[string]string{
 		"event":      event,
 		"action":     s.Action,
@@ -740,10 +742,11 @@ func (s WorkflowRunEvent) NewMetric() telegraf.Metric {
 		"name":       s.WorkflowRun.Name,
 	}
 	f := map[string]interface{}{
-		"created_at":  s.WorkflowRun.CreatedAt,
-		"updated_at":  s.WorkflowRun.UpdatedAt,
+		"created_at":  		createdAt.Unix(),
+		"updated_at":  		updatedAt.Unix(),
+		"Total duration": 	updatedAt.Unix() - createdAt.Unix(),
 	}
-	m, err := metric.New(meas, t, f, time.Now())
+	m, err := metric.New(meas, t, f, createdAt)
 	if err != nil {
 		log.Fatalf("Failed to create %v event", event)
 	}
