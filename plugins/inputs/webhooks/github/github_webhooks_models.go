@@ -93,6 +93,14 @@ type WorkflowRun struct {
 	UpdatedAt   string `json:"updated_at"`
 }
 
+type CheckRun struct {
+	Name        string `json:"name"`
+	Status      string `json:"status"`
+	Conclusion  string `json:"conclusion"`
+	StartedAt   string `json:"started_at"`
+	CompletedAt string `json:"completed_at"`
+}
+
 type CommitCommentEvent struct {
 	Comment    CommitComment `json:"comment"`
 	Repository Repository    `json:"repository"`
@@ -744,9 +752,42 @@ func (s WorkflowRunEvent) NewMetric() telegraf.Metric {
 	f := map[string]interface{}{
 		"created_at":  		createdAt.Unix(),
 		"updated_at":  		updatedAt.Unix(),
-		"total_duration": 	updatedAt.Sub(createdAt).Seconds(),
 	}
-	m, err := metric.New(meas, t, f, createdAt)
+	m, err := metric.New(meas, t, f, time.Now())
+	if err != nil {
+		log.Fatalf("Failed to create %v event", event)
+	}
+	log.Printf("D! Metric %v", m)
+	return m
+}
+
+type CheckRunEvent struct {
+	Action      string      `json:"action"`
+	CheckRun 	CheckRun 	`json:"check_run"`
+	Repository  Repository  `json:"repository"`
+	Sender      Sender      `json:"sender"`
+}
+
+func (s CheckRunEvent) NewMetric() telegraf.Metric {
+	event := "check_run"
+	startedAt, _ := time.Parse(time.RFC3339, s.CheckRun.StartedAt)
+	completedAt, _ := time.Parse(time.RFC3339, s.CheckRun.CompletedAt)
+	t := map[string]string{
+		"event":      event,
+		"action":     s.Action,
+		"repository": s.Repository.Repository,
+		"private":    fmt.Sprintf("%v", s.Repository.Private),
+		"user":       s.Sender.User,
+		"admin":      fmt.Sprintf("%v", s.Sender.Admin),
+		"status":     s.CheckRun.Status,
+		"conclusion": s.CheckRun.Conclusion,
+		"name":       s.CheckRun.Name,
+	}
+	f := map[string]interface{}{
+		"started_at":  		startedAt.Unix(),
+		"completed_at":  		completedAt.Unix(),
+	}
+	m, err := metric.New(meas, t, f, time.Now())
 	if err != nil {
 		log.Fatalf("Failed to create %v event", event)
 	}

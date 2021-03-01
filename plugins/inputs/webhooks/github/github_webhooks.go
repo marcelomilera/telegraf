@@ -74,6 +74,8 @@ func (e *newEventError) Error() string {
 func NewEvent(data []byte, name string) (Event, error) {
 	log.Printf("D! New %v event received", name)
 	switch name {
+	case "check_run":
+		return generateEvent(data, &CheckRunEvent{})
 	case "commit_comment":
 		return generateEvent(data, &CommitCommentEvent{})
 	case "create":
@@ -119,7 +121,6 @@ func NewEvent(data []byte, name string) (Event, error) {
 	case "watch":
 		return generateEvent(data, &WatchEvent{})
 	case "workflow_run":
-		log.Printf("D! Inside %v case", name)
 		return generateEvent(data, &WorkflowRunEvent{})
 	}
 	return nil, &newEventError{"Not a recognized event type"}
