@@ -744,7 +744,7 @@ func (s WorkflowRunEvent) NewMetric() telegraf.Metric {
 	f := map[string]interface{}{
 		"created_at":  		createdAt.Unix(),
 		"updated_at":  		updatedAt.Unix(),
-		"total_duration": 	updatedAt.Sub(createdAt).Seconds,
+		"total_duration": 	updatedAt.Sub(createdAt).Seconds(),
 	}
 	m, err := metric.New(meas, t, f, createdAt)
 	if err != nil {
